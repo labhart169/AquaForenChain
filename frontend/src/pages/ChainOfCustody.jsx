@@ -1,0 +1,1 @@
+export default function ChainOfCustody(){ return <><h2>Chain of Custody</h2><p>The backend generates a hash-linked custody trail in results/csv/chain_of_custody.csv and results/raw/chain_of_custody.json.</p></>; }

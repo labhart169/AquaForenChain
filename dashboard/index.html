@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AquaForenChain – Forensic Dashboard</title>
+  <meta name="description" content="AquaForenChain: Forensic-Ready Ethereum and Digital-Twin Architecture for Verifiable Evidence Preservation in Smart-City Water Critical Infrastructure"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:        #070d1a;
+      --bg2:       #0d1629;
+      --bg3:       #111d35;
+      --surface:   rgba(255,255,255,0.04);
+      --border:    rgba(100,180,255,0.12);
+      --accent:    #38bdf8;
+      --accent2:   #818cf8;
+      --accent3:   #34d399;
+      --danger:    #f87171;
+      --warn:      #fb923c;
+      --txt:       #e2e8f0;
+      --txt2:      #94a3b8;
+      --txt3:      #475569;
+      --grad1:     linear-gradient(135deg,#1e3a5f,#0f172a);
+      --card-glow: 0 0 24px rgba(56,189,248,0.08);
+      --r:         14px;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      font-family:'Inter',sans-serif;
+      background:var(--bg);
+      color:var(--txt);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+
+    /* ── Animated background ── */
+    body::before{
+      content:'';
+      position:fixed;
+      top:-50%;left:-50%;
+      width:200%;height:200%;
+      background:
+        radial-gradient(ellipse 600px 400px at 20% 20%, rgba(56,189,248,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 300px at 80% 80%, rgba(129,140,248,0.05) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 300px at 50% 50%, rgba(52,211,153,0.03) 0%, transparent 70%);
+      animation:bgPulse 12s ease-in-out infinite alternate;
+      pointer-events:none;
+      z-index:0;
+    }
+    @keyframes bgPulse{
+      0%{transform:scale(1) rotate(0deg);}
+      100%{transform:scale(1.05) rotate(2deg);}
+    }
+
+    /* ── Layout ── */
+    .wrapper{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:0 24px 60px;}
+
+    /* ── Header ── */
+    header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:24px 0 20px;
+      border-bottom:1px solid var(--border);
+      margin-bottom:32px;
+    }
+    .logo{display:flex;align-items:center;gap:14px;}
+    .logo-icon{
+      width:48px;height:48px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      border-radius:12px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:24px;
+      box-shadow:0 0 20px rgba(56,189,248,0.3);
+    }
+    .logo-text h1{font-size:1.4rem;font-weight:800;letter-spacing:-0.5px;}
+    .logo-text p{font-size:0.72rem;color:var(--txt2);letter-spacing:0.3px;}
+    .header-badges{display:flex;gap:10px;flex-wrap:wrap;}
+    .badge{
+      padding:5px 12px;border-radius:20px;
+      font-size:0.72rem;font-weight:600;letter-spacing:0.5px;
+      border:1px solid;
+    }
+    .badge-blue{color:var(--accent);border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);}
+    .badge-green{color:var(--accent3);border-color:rgba(52,211,153,0.3);background:rgba(52,211,153,0.08);}
+    .badge-purple{color:var(--accent2);border-color:rgba(129,140,248,0.3);background:rgba(129,140,248,0.08);}
+
+    /* ── KPI strip ── */
+    .kpi-strip{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:16px;
+      margin-bottom:32px;
+    }
+    .kpi-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      padding:20px;
+      backdrop-filter:blur(12px);
+      box-shadow:var(--card-glow);
+      position:relative;
+      overflow:hidden;
+      transition:transform 0.2s,box-shadow 0.2s;
+    }
+    .kpi-card:hover{transform:translateY(-3px);box-shadow:0 0 36px rgba(56,189,248,0.14);}
+    .kpi-card::before{
+      content:'';
+      position:absolute;top:0;left:0;right:0;
+      height:2px;
+      border-radius:var(--r) var(--r) 0 0;
+    }
+    .kpi-card.blue::before{background:linear-gradient(90deg,var(--accent),transparent);}
+    .kpi-card.green::before{background:linear-gradient(90deg,var(--accent3),transparent);}
+    .kpi-card.purple::before{background:linear-gradient(90deg,var(--accent2),transparent);}
+    .kpi-card.orange::before{background:linear-gradient(90deg,var(--warn),transparent);}
+    .kpi-card.red::before{background:linear-gradient(90deg,var(--danger),transparent);}
+    .kpi-label{font-size:0.72rem;color:var(--txt2);font-weight:500;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;}
+    .kpi-value{font-size:2rem;font-weight:800;line-height:1;margin-bottom:4px;}
+    .kpi-value.blue{color:var(--accent);}
+    .kpi-value.green{color:var(--accent3);}
+    .kpi-value.purple{color:var(--accent2);}
+    .kpi-value.orange{color:var(--warn);}
+    .kpi-value.red{color:var(--danger);}
+    .kpi-sub{font-size:0.72rem;color:var(--txt3);}
+
+    /* ── Section ── */
+    .section{margin-bottom:32px;}
+    .section-header{
+      display:flex;align-items:center;gap:10px;
+      margin-bottom:18px;
+    }
+    .section-title{font-size:1.1rem;font-weight:700;}
+    .section-line{flex:1;height:1px;background:var(--border);}
+
+    /* ── Grid layouts ── */
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;}
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+    @media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+    /* ── Card ── */
+    .card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      padding:24px;
+      backdrop-filter:blur(12px);
+      box-shadow:var(--card-glow);
+    }
+    .card-title{font-size:0.85rem;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:18px;}
+    .card-title span{font-size:1.1em;margin-right:6px;}
+
+    /* ── Chart containers ── */
+    .chart-wrap{position:relative;height:260px;}
+    .chart-wrap-sm{position:relative;height:200px;}
+
+    /* ── Sensor grid ── */
+    .sensor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+    .sensor-item{
+      background:rgba(255,255,255,0.03);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:14px;
+      text-align:center;
+    }
+    .sensor-icon{font-size:1.8rem;margin-bottom:6px;}
+    .sensor-name{font-size:0.7rem;color:var(--txt2);font-weight:500;margin-bottom:4px;}
+    .sensor-val{font-size:1.3rem;font-weight:700;color:var(--accent);}
+    .sensor-unit{font-size:0.7rem;color:var(--txt3);}
+    .sensor-status{
+      display:inline-block;padding:2px 8px;border-radius:10px;
+      font-size:0.65rem;font-weight:600;margin-top:6px;
+    }
+    .status-ok{background:rgba(52,211,153,0.15);color:var(--accent3);}
+    .status-alert{background:rgba(248,113,113,0.15);color:var(--danger);}
+    .status-warn{background:rgba(251,146,60,0.15);color:var(--warn);}
+
+    /* ── Attack matrix ── */
+    .attack-list{display:flex;flex-direction:column;gap:10px;}
+    .attack-row{
+      display:flex;align-items:center;gap:12px;
+      background:rgba(255,255,255,0.02);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 16px;
+    }
+    .attack-badge{
+      width:24px;height:24px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;flex-shrink:0;font-weight:700;
+    }
+    .attack-badge.pass{background:rgba(52,211,153,0.2);color:var(--accent3);border:1px solid rgba(52,211,153,0.4);}
+    .attack-badge.fail{background:rgba(248,113,113,0.2);color:var(--danger);border:1px solid rgba(248,113,113,0.4);}
+    .attack-name{font-size:0.85rem;font-weight:600;flex:1;}
+    .attack-mech{font-size:0.72rem;color:var(--txt2);}
+    .attack-result{font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:8px;}
+    .result-pass{background:rgba(52,211,153,0.15);color:var(--accent3);}
+    .result-fail{background:rgba(248,113,113,0.15);color:var(--danger);}
+
+    /* ── Custody trail ── */
+    .custody-list{display:flex;flex-direction:column;gap:0;}
+    .custody-row{
+      display:flex;gap:12px;padding:10px 0;
+      border-bottom:1px solid var(--border);
+      font-size:0.8rem;
+    }
+    .custody-row:last-child{border-bottom:none;}
+    .custody-id{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:0.72rem;min-width:100px;}
+    .custody-actor{color:var(--accent2);min-width:110px;}
+    .custody-action{color:var(--accent3);font-weight:500;}
+    .custody-hash-short{color:var(--txt3);font-family:'JetBrains Mono',monospace;font-size:0.65rem;}
+
+    /* ── Table ── */
+    .data-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+    .data-table th{
+      background:rgba(56,189,248,0.08);color:var(--accent);
+      font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;
+      padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);
+    }
+    .data-table td{
+      padding:10px 14px;border-bottom:1px solid rgba(100,180,255,0.06);
+      color:var(--txt);vertical-align:middle;
+    }
+    .data-table tr:hover td{background:rgba(56,189,248,0.03);}
+    .mono{font-family:'JetBrains Mono',monospace;font-size:0.75rem;}
+    .tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600;}
+    .tag-blue{background:rgba(56,189,248,0.12);color:var(--accent);}
+    .tag-green{background:rgba(52,211,153,0.12);color:var(--accent3);}
+    .tag-purple{background:rgba(129,140,248,0.12);color:var(--accent2);}
+    .tag-red{background:rgba(248,113,113,0.12);color:var(--danger);}
+    .tag-orange{background:rgba(251,146,60,0.12);color:var(--warn);}
+
+    /* ── Merkle viz ── */
+    .merkle-info{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px;}
+    .merkle-stat{text-align:center;}
+    .merkle-stat-v{font-size:1.6rem;font-weight:800;color:var(--accent);}
+    .merkle-stat-l{font-size:0.7rem;color:var(--txt2);}
+    .root-display{
+      background:rgba(56,189,248,0.06);
+      border:1px solid rgba(56,189,248,0.2);
+      border-radius:8px;
+      padding:12px 16px;
+      font-family:'JetBrains Mono',monospace;
+      font-size:0.72rem;
+      color:var(--accent);
+      word-break:break-all;
+      margin-top:10px;
+    }
+
+    /* ── Progress bars ── */
+    .progress-bar{
+      height:6px;background:rgba(255,255,255,0.06);
+      border-radius:3px;overflow:hidden;margin-top:6px;
+    }
+    .progress-fill{height:100%;border-radius:3px;transition:width 1.5s ease;}
+    .fill-blue{background:linear-gradient(90deg,var(--accent),#7dd3fc);}
+    .fill-green{background:linear-gradient(90deg,var(--accent3),#6ee7b7);}
+    .fill-purple{background:linear-gradient(90deg,var(--accent2),#c4b5fd);}
+    .fill-orange{background:linear-gradient(90deg,var(--warn),#fed7aa);}
+    .fill-red{background:linear-gradient(90deg,var(--danger),#fca5a5);}
+
+    /* ── Device cards ── */
+    .device-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+    .device-card{
+      background:rgba(255,255,255,0.02);
+      border:1px solid var(--border);
+      border-radius:10px;padding:14px;
+    }
+    .device-id{font-size:0.8rem;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;}
+    .device-type{font-size:0.7rem;color:var(--txt2);margin:4px 0;}
+    .device-zone{font-size:0.68rem;}
+
+    /* ── MITRE tags ── */
+    .mitre-row td:first-child{font-family:'JetBrains Mono',monospace;color:var(--accent2);}
+
+    /* ── Footer ── */
+    footer{
+      text-align:center;padding-top:32px;
+      border-top:1px solid var(--border);
+      color:var(--txt3);font-size:0.78rem;
+    }
+
+    /* ── Tabs ── */
+    .tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+    .tab{
+      padding:8px 18px;border-radius:8px;
+      font-size:0.8rem;font-weight:500;cursor:pointer;
+      border:1px solid var(--border);
+      color:var(--txt2);background:transparent;
+      transition:all 0.2s;
+    }
+    .tab.active,.tab:hover{
+      background:rgba(56,189,248,0.12);
+      color:var(--accent);
+      border-color:rgba(56,189,248,0.3);
+    }
+    .tab-panel{display:none;}
+    .tab-panel.active{display:block;}
+
+    /* ── Loading ── */
+    .loading{
+      display:flex;align-items:center;justify-content:center;
+      height:100px;color:var(--txt3);font-size:0.85rem;
+    }
+    .spinner{
+      width:20px;height:20px;
+      border:2px solid var(--border);
+      border-top-color:var(--accent);
+      border-radius:50%;
+      animation:spin 0.8s linear infinite;
+      margin-right:10px;
+    }
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── Animated number ── */
+    .animated-num{transition:all 0.5s ease;}
+
+    /* ── Alert state banner ── */
+    .alert-banner{
+      background:linear-gradient(135deg,rgba(248,113,113,0.12),rgba(251,146,60,0.08));
+      border:1px solid rgba(248,113,113,0.3);
+      border-radius:12px;
+      padding:16px 24px;
+      margin-bottom:24px;
+      display:flex;align-items:center;gap:14px;
+    }
+    .alert-icon{font-size:1.4rem;}
+    .alert-text{font-size:0.9rem;font-weight:500;}
+
+    /* ── Scrollable table ── */
+    .table-wrap{overflow-x:auto;border-radius:10px;}
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+      <div class="logo-text">
+        <h1>AquaForenChain</h1>
+        <p>FORENSIC-READY ETHEREUM · DIGITAL TWIN · SMART-CITY WATER SCADA</p>
+      </div>
+    </div>
+    <div class="header-badges">
+      <span class="badge badge-blue" id="live-badge">⬤ LIVE DATA</span>
+      <span class="badge badge-green">Ethereum PoS</span>
+      <span class="badge badge-purple">v2.0</span>
+    </div>
+  </header>
+
+  <!-- ── Alert Banner ── -->
+  <div class="alert-banner" id="alert-banner" style="display:none;">
+    <span class="alert-icon">⚠️</span>
+    <span class="alert-text" id="alert-text">Digital twin in ALERT state: Active alarms detected</span>
+  </div>
+
+  <!-- ── KPI Strip ── -->
+  <div class="kpi-strip">
+    <div class="kpi-card blue">
+      <div class="kpi-label">Events Generated</div>
+      <div class="kpi-value blue" id="kpi-events">—</div>
+      <div class="kpi-sub">SCADA + IoT events</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Attack Detection</div>
+      <div class="kpi-value green" id="kpi-detect">—</div>
+      <div class="kpi-sub">All scenarios passed</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">Merkle Depth</div>
+      <div class="kpi-value purple" id="kpi-depth">—</div>
+      <div class="kpi-sub">⌈log₂(N)⌉ = O(log N)</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Custody Actions</div>
+      <div class="kpi-value orange" id="kpi-custody">—</div>
+      <div class="kpi-sub">Hash-linked, valid</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Commit Reduction</div>
+      <div class="kpi-value blue" id="kpi-reduction">—</div>
+      <div class="kpi-sub">vs direct anchoring</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Twin State</div>
+      <div class="kpi-value green" id="kpi-state" style="font-size:1.2rem">—</div>
+      <div class="kpi-sub">Digital twin status</div>
+    </div>
+  </div>
+
+  <!-- ── Digital Twin ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">🌊 Smart-Water Digital Twin – Real-Time State</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="card">
+      <div class="sensor-grid" id="sensor-grid">
+        <div class="loading"><div class="spinner"></div>Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('scalability')">📊 Scalability</button>
+    <button class="tab" onclick="showTab('attacks')">🛡️ Attack Detection</button>
+    <button class="tab" onclick="showTab('events')">📡 SCADA Events</button>
+    <button class="tab" onclick="showTab('custody')">🔗 Chain of Custody</button>
+    <button class="tab" onclick="showTab('gas')">⛽ Gas Costs</button>
+    <button class="tab" onclick="showTab('merkle')">🌳 Merkle Proof</button>
+    <button class="tab" onclick="showTab('statistical')">📈 Statistics</button>
+    <button class="tab" onclick="showTab('mitre')">🎯 MITRE ATT&CK</button>
+    <button class="tab" onclick="showTab('comparative')">⚖️ Comparative</button>
+    <button class="tab" onclick="showTab('devices')">📟 Devices</button>
+    <button class="tab" onclick="showTab('smartcity')">🏙️ Smart City</button>
+  </div>
+
+  <!-- ── Scalability Tab ── -->
+  <div class="tab-panel active" id="tab-scalability">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span>⏱</span>Merkle Build Time vs Batch Size</div>
+        <div class="chart-wrap"><canvas id="chart-merkle-gen"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>✅</span>Proof Verification Time (O(log N))</div>
+        <div class="chart-wrap"><canvas id="chart-verify"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="card">
+        <div class="card-title"><span>📉</span>Commitment Reduction Ratio</div>
+        <div class="chart-wrap"><canvas id="chart-reduction"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>🌳</span>Merkle Depth vs log₂(N)</div>
+        <div class="chart-wrap"><canvas id="chart-depth"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title"><span>📊</span>Scalability Results Table</div>
+      <div class="table-wrap">
+        <table class="data-table" id="table-scalability">
+          <thead><tr><th>Batch</th><th>Depth</th><th>Proof Len</th><th>Build (ms)</th><th>Verify (ms)</th><th>Reduction</th><th>Bytes Direct</th><th>Bytes Merkle</th></tr></thead>
+          <tbody id="tbody-scalability"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Attacks Tab ── -->
+  <div class="tab-panel" id="tab-attacks">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span>🛡️</span>Forensic Attack Detection Matrix (6/6)</div>
+        <div class="attack-list" id="attack-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>📊</span>Detection Overview</div>
+        <div class="chart-wrap"><canvas id="chart-attacks"></canvas></div>
+        <div style="text-align:center;margin-top:16px;">
+          <div style="font-size:2.5rem;font-weight:900;color:var(--accent3);" id="detect-rate-big">—</div>
+          <div style="font-size:0.8rem;color:var(--txt2);">Global Detection Rate</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title"><span>🔬</span>Threat Model Matrix</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Threat</th><th>Attacker Capability</th><th>Detection Mechanism</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Log tampering</td><td>Modify off-chain event value</td><td>SHA-256 + Merkle mismatch</td><td><span class="tag tag-green">DETECTED</span></td></tr>
+            <tr><td>Evidence deletion</td><td>Remove stored evidence</td><td>Missing from anchored batch</td><td><span class="tag tag-green">DETECTED</span></td></tr>
+            <tr><td>Replay event</td><td>Reuse old valid event</td><td>Nonce/sequence check</td><td><span class="tag tag-green">DETECTED</span></td></tr>
+            <tr><td>Timestamp manipulation</td><td>Alter time field</td><td>Canonical hash mismatch</td><td><span class="tag tag-green">DETECTED</span></td></tr>
+            <tr><td>Unauthorized device</td><td>Inject fake sensor</td><td>DeviceRegistry rejection</td><td><span class="tag tag-green">DETECTED</span></td></tr>
+            <tr><td>Custody alteration</td><td>Change analyst record</td><td>Hash-linked chain break</td><td><span class="tag tag-green">DETECTED</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCADA Events Tab ── -->
+  <div class="tab-panel" id="tab-events">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span>📡</span>Event Type Distribution (N=5,000)</div>
+        <div class="chart-wrap"><canvas id="chart-event-dist"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>⚠️</span>Severity Distribution</div>
+        <div class="chart-wrap"><canvas id="chart-severity"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title"><span>📈</span>Throughput Benchmark (SHA-256 Hashing)</div>
+      <div class="chart-wrap"><canvas id="chart-throughput"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ── Custody Tab ── -->
+  <div class="tab-panel" id="tab-custody">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span>🔗</span>Chain of Custody – Sample Records</div>
+        <div class="custody-list" id="custody-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>✅</span>Custody Integrity Status</div>
+        <div style="text-align:center;padding:20px 0;">
+          <div style="font-size:4rem;" id="custody-icon">✅</div>
+          <div style="font-size:1.1rem;font-weight:700;color:var(--accent3);margin:10px 0;" id="custody-status-txt">VALID</div>
+          <div style="font-size:0.8rem;color:var(--txt2);">Hash-linked chain verified</div>
+          <div style="margin-top:20px;display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+            <div class="merkle-stat"><div class="merkle-stat-v" id="custody-total">72</div><div class="merkle-stat-l">Total Actions</div></div>
+            <div class="merkle-stat"><div class="merkle-stat-v" style="color:var(--accent2)">3</div><div class="merkle-stat-l">Actors</div></div>
+            <div class="merkle-stat"><div class="merkle-stat-v" style="color:var(--accent3)">4</div><div class="merkle-stat-l">Action Types</div></div>
+          </div>
+        </div>
+        <div class="card-title" style="margin-top:16px;"><span>🔐</span>Custody Architecture</div>
+        <div style="font-size:0.8rem;color:var(--txt2);line-height:1.8;">
+          <p>Each custody record contains:</p>
+          <ul style="margin-left:18px;margin-top:8px;">
+            <li>Unique <code style="color:var(--accent)">custody_id</code></li>
+            <li>Linked <code style="color:var(--accent)">evidence_id</code></li>
+            <li>Actor identity (analyst/auditor/supervisor)</li>
+            <li>Action type with timestamp</li>
+            <li><code style="color:var(--accent3)">previous_hash</code> → tamper-evident linkage</li>
+            <li>Self-contained <code style="color:var(--accent3)">custody_hash</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Gas Costs Tab ── -->
+  <div class="tab-panel" id="tab-gas">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span>⛽</span>Gas Cost: Merkle vs Direct Anchoring (USD)</div>
+        <div class="chart-wrap"><canvas id="chart-gas"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>💰</span>Gas Savings by Batch Size</div>
+        <div class="chart-wrap"><canvas id="chart-gas-savings"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title"><span>📋</span>Deployment & Operational Gas Costs</div>
+      <div class="table-wrap">
+        <table class="data-table" id="table-gas-deploy">
+          <thead><tr><th>Operation</th><th>Gas Units</th><th>Frequency</th><th>ETH Cost</th><th>USD Cost</th></tr></thead>
+          <tbody id="tbody-gas-deploy"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Merkle Tab ── -->
+  <div class="tab-panel" id="tab-merkle">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span>🌳</span>Merkle Root (Current Batch)</div>
+        <div class="merkle-info">
+          <div class="merkle-stat"><div class="merkle-stat-v" id="m-depth">13</div><div class="merkle-stat-l">Tree Depth</div></div>
+          <div class="merkle-stat"><div class="merkle-stat-v" style="color:var(--accent2)" id="m-events">5000</div><div class="merkle-stat-l">Events</div></div>
+          <div class="merkle-stat"><div class="merkle-stat-v" style="color:var(--accent3)" id="m-proof">13</div><div class="merkle-stat-l">Proof Length</div></div>
+          <div class="merkle-stat"><div class="merkle-stat-v" style="color:var(--warn)">32B</div><div class="merkle-stat-l">On-Chain Size</div></div>
+        </div>
+        <div class="card-title"><span>🔑</span>Merkle Root Hash (SHA-256)</div>
+        <div class="root-display" id="merkle-root-display">Loading...</div>
+        <div style="margin-top:14px;font-size:0.78rem;color:var(--txt2);">
+          ⚡ This 32-byte commitment anchors <strong id="m-events-txt">5,000</strong> SCADA events immutably on Ethereum — a <strong id="m-ratio">5000:1</strong> commitment reduction.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>📊</span>On-Chain Storage Comparison</div>
+        <div class="chart-wrap"><canvas id="chart-onchain-bytes"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title"><span>🔐</span>Forensic Overhead per Event</div>
+      <div class="table-wrap">
+        <table class="data-table" id="table-overhead">
+          <thead><tr><th>Batch</th><th>Hashing (ms)</th><th>Merkle Build (ms)</th><th>Proof Gen (ms)</th><th>Total (ms)</th><th>Per Event (µs)</th></tr></thead>
+          <tbody id="tbody-overhead"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Statistical Tab ── -->
+  <div class="tab-panel" id="tab-statistical">
+    <div class="card">
+      <div class="card-title"><span>📈</span>Statistical Analysis (10 Runs, Seeds 42–51) – Merkle Build Time</div>
+      <div class="chart-wrap" style="height:320px;"><canvas id="chart-statistical-gen"></canvas></div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title"><span>📊</span>Statistical Results Table (Mean ± Std)</div>
+      <div class="table-wrap">
+        <table class="data-table" id="table-statistical">
+          <thead><tr><th>Batch</th><th>Runs</th><th>Build Mean (ms)</th><th>Build Std (ms)</th><th>Build Min</th><th>Build Max</th><th>Verify Mean (ms)</th><th>Verify Std</th><th>Depth</th></tr></thead>
+          <tbody id="tbody-statistical"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title"><span>🎲</span>Sensitivity Analysis (10 Different Seeds)</div>
+      <div class="table-wrap">
+        <table class="data-table" id="table-sensitivity">
+          <thead><tr><th>Seed</th><th>Root Prefix</th><th>Depth</th><th>Build (ms)</th><th>Verify (ms)</th><th>CRITICAL</th><th>SECURITY</th><th>Twin State</th></tr></thead>
+          <tbody id="tbody-sensitivity"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MITRE Tab ── -->
+  <div class="tab-panel" id="tab-mitre">
+    <div class="card">
+      <div class="card-title"><span>🎯</span>MITRE ATT&CK for ICS – AquaForenChain Coverage</div>
+      <div class="table-wrap">
+        <table class="data-table mitre-row" id="table-mitre">
+          <thead><tr><th>Technique ID</th><th>Technique Name</th><th>Tactic</th><th>Detection Method</th><th>Coverage</th></tr></thead>
+          <tbody id="tbody-mitre"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Comparative Tab ── -->
+  <div class="tab-panel" id="tab-comparative">
+    <div class="card">
+      <div class="card-title"><span>⚖️</span>Comparative Analysis vs Related Systems</div>
+      <div class="table-wrap">
+        <table class="data-table" id="table-comparative">
+          <thead><tr><th>System</th><th>Consensus</th><th>Anchoring</th><th>Tamper Detect</th><th>Digital Twin</th><th>Custody</th><th>Verify O()</th><th>Commit Ratio</th></tr></thead>
+          <tbody id="tbody-comparative"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title"><span>📊</span>Feature Comparison Radar</div>
+      <div style="max-width:500px;margin:0 auto;" class="chart-wrap"><canvas id="chart-radar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ── Devices Tab ── -->
+  <div class="tab-panel" id="tab-devices">
+    <div class="card">
+      <div class="card-title"><span>📟</span>Device Registry (Smart Contract: DeviceRegistry.sol)</div>
+      <div class="device-grid" id="device-grid"></div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title"><span>🔒</span>Privacy & Data Minimization Analysis</div>
+      <div class="table-wrap">
+        <table class="data-table" id="table-privacy">
+          <thead><tr><th>Category</th><th>Location</th><th>PII Exposure</th><th>Size (KB)</th></tr></thead>
+          <tbody id="tbody-privacy"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Smart City Tab ── -->
+  <div class="tab-panel" id="tab-smartcity">
+    <div class="grid-2">
+      <div id="smartcity-cards"></div>
+      <div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title"><span>📋</span>Requirements Traceability Matrix</div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>ID</th><th>Requirement</th><th>Standard</th><th>Result</th></tr></thead>
+              <tbody id="tbody-requirements"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <p>AquaForenChain v2.0 · Forensic-Ready Ethereum Architecture · Smart-City Water SCADA · © 2026</p>
+    <p style="margin-top:6px;">Data refreshes automatically · Built with FastAPI + Chart.js · All results exported to <code>results/</code></p>
+  </footer>
+
+</div>
+
+<script>
+// ─── Utilities ──────────────────────────────────────────────────────────────
+const api = (path) => fetch('/api' + path).then(r => r.json()).catch(() => null);
+const $ = id => document.getElementById(id);
+
+const COLORS = {
+  blue:   'rgba(56,189,248,',
+  green:  'rgba(52,211,153,',
+  purple: 'rgba(129,140,248,',
+  orange: 'rgba(251,146,60,',
+  red:    'rgba(248,113,113,',
+};
+
+function chartDefaults() {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter' } } } },
+    scales: {
+      x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } },
+      y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } },
+    }
+  };
+}
+
+function makeGradient(ctx, color) {
+  const g = ctx.createLinearGradient(0, 0, 0, 260);
+  g.addColorStop(0, color + '0.35)');
+  g.addColorStop(1, color + '0.02)');
+  return g;
+}
+
+// ─── Tab system ─────────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  $('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ─── Load Summary ────────────────────────────────────────────────────────────
+async function loadSummary() {
+  const s = await api('/summary');
+  if (!s) return;
+  $('kpi-events').textContent = Number(s.events_generated).toLocaleString();
+  $('kpi-detect').textContent = s.attack_detection_rate_percent + '%';
+  $('kpi-depth').textContent = s.merkle_depth_full_batch;
+  $('kpi-custody').textContent = s.custody_actions;
+  $('kpi-reduction').textContent = Number(s.events_generated).toLocaleString() + ':1';
+  const state = s.digital_twin_state || 'NORMAL';
+  const stateEl = $('kpi-state');
+  stateEl.textContent = state;
+  if (state === 'ALERT') {
+    stateEl.className = 'kpi-value red';
+    $('alert-banner').style.display = 'flex';
+  } else {
+    stateEl.className = 'kpi-value green';
+  }
+  $('merkle-root-display').textContent = s.merkle_root || '—';
+  $('m-depth').textContent = s.merkle_depth_full_batch;
+  $('m-events').textContent = Number(s.events_generated).toLocaleString();
+  $('m-events-txt').textContent = Number(s.events_generated).toLocaleString();
+  $('m-ratio').textContent = Number(s.events_generated).toLocaleString() + ':1';
+}
+
+// ─── Digital Twin ────────────────────────────────────────────────────────────
+async function loadDigitalTwin() {
+  const t = await api('/digital_twin');
+  if (!t) return;
+  const sensors = [
+    { icon: '💧', name: 'Tank Level', val: t.tank_level_percent, unit: '%', key: 'tank_level_percent',
+      alert: v => parseFloat(v) < 20 },
+    { icon: '🔵', name: 'Pressure', val: t.pressure_bar, unit: 'bar', key: 'pressure_bar',
+      alert: v => parseFloat(v) < 1.5 || parseFloat(v) > 6 },
+    { icon: '🌊', name: 'Flow Rate', val: t.flow_rate_lpm, unit: 'L/min', key: 'flow_rate_lpm',
+      alert: v => parseFloat(v) < 10 },
+    { icon: '🧪', name: 'Chlorine', val: t.chlorine_mg_l, unit: 'mg/L', key: 'chlorine_mg_l',
+      alert: v => parseFloat(v) < 0.35 },
+    { icon: '⚙️', name: 'Pump', val: t.pump_status, unit: '', key: 'pump_status',
+      alert: v => v === 'OFF' },
+    { icon: '🚰', name: 'Valve', val: t.valve_status, unit: '', key: 'valve_status',
+      alert: v => v === 'CLOSED' },
+    { icon: '📡', name: 'Network', val: t.network_status, unit: '', key: 'network_status',
+      alert: v => v !== 'OK' },
+    { icon: '🚨', name: 'Alarms', val: t.alarms || 'NONE', unit: '', key: 'alarms',
+      alert: v => v !== 'NONE' },
+  ];
+  $('sensor-grid').innerHTML = sensors.map(s => {
+    const isAlert = s.alert(s.val);
+    const statusClass = isAlert ? 'status-alert' : 'status-ok';
+    const statusTxt = isAlert ? 'ALERT' : 'OK';
+    return `<div class="sensor-item">
+      <div class="sensor-icon">${s.icon}</div>
+      <div class="sensor-name">${s.name}</div>
+      <div class="sensor-val" style="${isAlert ? 'color:var(--danger)' : ''}">${s.val}</div>
+      <div class="sensor-unit">${s.unit}</div>
+      <span class="sensor-status ${statusClass}">${statusTxt}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── Scalability Charts ──────────────────────────────────────────────────────
+async function loadScalability() {
+  const data = await api('/scalability');
+  if (!data || !data.length) return;
+  const labels = data.map(r => r.batch_size);
+  const genMs   = data.map(r => parseFloat(r.merkle_generation_ms));
+  const verMs   = data.map(r => parseFloat(r.verification_ms));
+  const reduction = data.map(r => parseFloat(r.commitment_reduction_ratio));
+  const depth   = data.map(r => parseFloat(r.merkle_depth));
+  const log2    = labels.map(x => Math.ceil(Math.log2(x)));
+  const bytesD  = data.map(r => parseFloat(r.onchain_bytes_direct_sha256));
+  const bytesM  = data.map(r => parseFloat(r.onchain_bytes_merkle_root));
+
+  // Chart 1: Merkle gen
+  new Chart($('chart-merkle-gen'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Build time (ms)',
+        data: genMs,
+        borderColor: '#38bdf8', backgroundColor: makeGradient($('chart-merkle-gen').getContext('2d'), COLORS.blue),
+        borderWidth: 2.5, pointRadius: 5, tension: 0.35, fill: true,
+      }]
+    },
+    options: { ...chartDefaults(), scales: { x: { type: 'logarithmic', ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } }, y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } } } }
+  });
+
+  // Chart 2: Verify
+  new Chart($('chart-verify'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Verify time (ms)',
+        data: verMs,
+        borderColor: '#34d399', backgroundColor: makeGradient($('chart-verify').getContext('2d'), COLORS.green),
+        borderWidth: 2.5, pointRadius: 5, tension: 0.35, fill: true,
+      }]
+    },
+    options: { ...chartDefaults(), scales: { x: { type: 'logarithmic', ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } }, y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } } } }
+  });
+
+  // Chart 3: Reduction
+  new Chart($('chart-reduction'), {
+    type: 'bar',
+    data: {
+      labels: labels.map(String),
+      datasets: [{
+        label: 'Commit reduction ratio (N:1)',
+        data: reduction,
+        backgroundColor: labels.map(() => COLORS.orange + '0.75)'),
+        borderColor: '#fb923c', borderWidth: 1, borderRadius: 6,
+      }]
+    },
+    options: chartDefaults()
+  });
+
+  // Chart 4: Depth vs log2
+  new Chart($('chart-depth'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Actual depth', data: depth, borderColor: '#818cf8', borderWidth: 2.5, pointRadius: 5 },
+        { label: '⌈log₂(N)⌉ theoretical', data: log2, borderColor: '#475569', borderWidth: 1.5, borderDash: [6,3], pointRadius: 3 },
+      ]
+    },
+    options: { ...chartDefaults(), scales: { x: { type: 'logarithmic', ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } }, y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } } } }
+  });
+
+  // Chart: on-chain bytes
+  new Chart($('chart-onchain-bytes'), {
+    type: 'bar',
+    data: {
+      labels: labels.map(String),
+      datasets: [
+        { label: 'Direct SHA-256 (bytes)', data: bytesD, backgroundColor: COLORS.red + '0.7)', borderRadius: 4 },
+        { label: 'Merkle root only (bytes)', data: bytesM, backgroundColor: COLORS.green + '0.7)', borderRadius: 4 },
+      ]
+    },
+    options: { ...chartDefaults(), scales: { x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } }, y: { type: 'logarithmic', ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } } } }
+  });
+
+  // Table
+  const tbody = $('tbody-scalability');
+  tbody.innerHTML = data.map(r => `<tr>
+    <td><strong>${Number(r.batch_size).toLocaleString()}</strong></td>
+    <td>${r.merkle_depth}</td>
+    <td>${r.proof_length}</td>
+    <td class="mono" style="color:var(--accent)">${r.merkle_generation_ms}</td>
+    <td class="mono" style="color:var(--accent3)">${r.verification_ms}</td>
+    <td><span class="tag tag-orange">${Number(r.commitment_reduction_ratio).toLocaleString()}×</span></td>
+    <td class="mono">${Number(r.onchain_bytes_direct_sha256).toLocaleString()}B</td>
+    <td><span class="tag tag-green">32B</span></td>
+  </tr>`).join('');
+}
+
+// ─── Attacks ─────────────────────────────────────────────────────────────────
+async function loadAttacks() {
+  const data = await api('/attacks');
+  if (!data || !data.length) return;
+  const icons = { 'PASS': '✓', 'FAIL': '✗' };
+  $('attack-list').innerHTML = data.map(a => {
+    const pass = a.result === 'PASS';
+    return `<div class="attack-row">
+      <div class="attack-badge ${pass ? 'pass' : 'fail'}">${pass ? '✓' : '✗'}</div>
+      <div>
+        <div class="attack-name">${a.scenario}</div>
+        <div class="attack-mech">${a.mechanism}</div>
+      </div>
+      <span class="attack-result ${pass ? 'result-pass' : 'result-fail'}">${a.result}</span>
+    </div>`;
+  }).join('');
+  const passed = data.filter(a => a.result === 'PASS').length;
+  const rate = Math.round(passed / data.length * 100);
+  $('detect-rate-big').textContent = rate + '%';
+  new Chart($('chart-attacks'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Detected', 'Not Detected'],
+      datasets: [{ data: [passed, data.length - passed],
+        backgroundColor: [COLORS.green + '0.8)', COLORS.red + '0.8)'],
+        borderColor: ['#34d399','#f87171'], borderWidth: 2,
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
+  });
+}
+
+// ─── Events Distribution ─────────────────────────────────────────────────────
+async function loadEvents() {
+  const dist = await api('/events/distribution');
+  const sev  = await api('/severity/distribution');
+  const thr  = await api('/throughput');
+
+  if (dist && dist.length) {
+    const labels = dist.map(r => r.event_type.replace(/_/g, ' '));
+    const counts = dist.map(r => parseInt(r.count));
+    new Chart($('chart-event-dist'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ label: 'Event count', data: counts,
+          backgroundColor: ['#38bdf8','#34d399','#818cf8','#fb923c','#f87171','#06b6d4','#a78bfa','#6ee7b7','#fbbf24','#94a3b8'].map(c => c + 'cc'),
+          borderRadius: 6,
+        }]
+      },
+      options: { ...chartDefaults(), indexAxis: 'y' }
+    });
+  }
+
+  if (sev && sev.length) {
+    const sevColors = { LOW: '#34d399', MEDIUM: '#fb923c', HIGH: '#f87171', CRITICAL: '#991b1b' };
+    new Chart($('chart-severity'), {
+      type: 'pie',
+      data: {
+        labels: sev.map(r => r.severity),
+        datasets: [{ data: sev.map(r => parseInt(r.count)),
+          backgroundColor: sev.map(r => sevColors[r.severity] || '#64748b'),
+          borderColor: '#070d1a', borderWidth: 2,
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'right', labels: { color: '#94a3b8' } } } }
+    });
+  }
+
+  if (thr && thr.length) {
+    new Chart($('chart-throughput'), {
+      type: 'line',
+      data: {
+        labels: thr.map(r => Number(r.events).toLocaleString()),
+        datasets: [{
+          label: 'Throughput (events/sec)',
+          data: thr.map(r => parseFloat(r.throughput_events_per_sec)),
+          borderColor: '#818cf8', backgroundColor: makeGradient($('chart-throughput').getContext('2d'), COLORS.purple),
+          borderWidth: 2.5, pointRadius: 5, fill: true, tension: 0.3,
+        }]
+      },
+      options: chartDefaults()
+    });
+  }
+}
+
+// ─── Custody ─────────────────────────────────────────────────────────────────
+async function loadCustody() {
+  const c = await api('/custody');
+  if (!c) return;
+  const sample = c.sample || [];
+  $('custody-list').innerHTML = sample.map(r => `
+    <div class="custody-row">
+      <span class="custody-id">${r.custody_id}</span>
+      <span class="custody-actor">${r.actor}</span>
+      <span class="custody-action">${r.action}</span>
+      <span class="custody-hash-short">${(r.custody_hash || '').substring(0,20)}…</span>
+    </div>`).join('');
+  if (c.total) $('custody-total').textContent = c.total;
+}
+
+// ─── Gas Costs ───────────────────────────────────────────────────────────────
+async function loadGas() {
+  const gas = await api('/gas');
+  const dep = await api('/gas/deployment');
+
+  if (gas && gas.length) {
+    new Chart($('chart-gas'), {
+      type: 'bar',
+      data: {
+        labels: gas.map(r => r.batch_size),
+        datasets: [
+          { label: 'Direct anchor (USD)', data: gas.map(r => parseFloat(r.direct_anchor_usd)), backgroundColor: COLORS.red + '0.7)', borderRadius: 4 },
+          { label: 'Merkle anchor (USD)', data: gas.map(r => parseFloat(r.merkle_anchor_usd)), backgroundColor: COLORS.green + '0.7)', borderRadius: 4 },
+        ]
+      },
+      options: { ...chartDefaults(), scales: { x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } }, y: { type: 'logarithmic', ticks: { color: '#64748b' }, grid: { color: 'rgba(100,180,255,0.06)' } } } }
+    });
+
+    new Chart($('chart-gas-savings'), {
+      type: 'line',
+      data: {
+        labels: gas.map(r => r.batch_size),
+        datasets: [{ label: 'Gas savings (%)', data: gas.map(r => parseFloat(r.gas_savings_pct)),
+          borderColor: '#34d399', backgroundColor: makeGradient($('chart-gas-savings').getContext('2d'), COLORS.green),
+          borderWidth: 2.5, pointRadius: 5, fill: true, tension: 0.3,
+        }]
+      },
+      options: chartDefaults()
+    });
+  }
+
+  if (dep && dep.length) {
+    $('tbody-gas-deploy').innerHTML = dep.map(r => `<tr>
+      <td>${r.operation}</td>
+      <td class="mono">${Number(r.gas_units).toLocaleString()}</td>
+      <td><span class="tag tag-blue">${r.frequency}</span></td>
+      <td class="mono" style="color:var(--accent3)">${r.eth_cost}</td>
+      <td class="mono" style="color:var(--warn)">$${r.usd_cost}</td>
+    </tr>`).join('');
+  }
+}
+
+// ─── Statistical ─────────────────────────────────────────────────────────────
+async function loadStatistical() {
+  const stat = await api('/statistical');
+  const sens = await api('/sensitivity');
+
+  if (stat && stat.length) {
+    new Chart($('chart-statistical-gen'), {
+      type: 'bar',
+      data: {
+        labels: stat.map(r => r.batch_size),
+        datasets: [
+          { label: 'Mean build time (ms)', data: stat.map(r => parseFloat(r.merkle_gen_mean_ms)),
+            backgroundColor: COLORS.blue + '0.7)', borderRadius: 4 },
+          { label: 'Std Dev', data: stat.map(r => parseFloat(r.merkle_gen_std_ms)),
+            backgroundColor: COLORS.purple + '0.5)', borderRadius: 4 },
+        ]
+      },
+      options: chartDefaults()
+    });
+
+    $('tbody-statistical').innerHTML = stat.map(r => `<tr>
+      <td><strong>${Number(r.batch_size).toLocaleString()}</strong></td>
+      <td>${r.runs}</td>
+      <td class="mono" style="color:var(--accent)">${r.merkle_gen_mean_ms}</td>
+      <td class="mono" style="color:var(--accent2)">±${r.merkle_gen_std_ms}</td>
+      <td class="mono">${r.merkle_gen_min_ms}</td>
+      <td class="mono">${r.merkle_gen_max_ms}</td>
+      <td class="mono" style="color:var(--accent3)">${r.verify_mean_ms}</td>
+      <td class="mono">±${r.verify_std_ms}</td>
+      <td>${r.merkle_depth}</td>
+    </tr>`).join('');
+  }
+
+  if (sens && sens.length) {
+    $('tbody-sensitivity').innerHTML = sens.map(r => `<tr>
+      <td class="mono" style="color:var(--accent2)">${r.seed}</td>
+      <td class="mono" style="font-size:0.68rem">${r.merkle_root_prefix}</td>
+      <td>${r.merkle_depth}</td>
+      <td class="mono">${r.merkle_gen_ms}</td>
+      <td class="mono">${r.verify_ms}</td>
+      <td><span class="tag tag-red">${r.critical_events}</span></td>
+      <td><span class="tag tag-orange">${r.security_events}</span></td>
+      <td><span class="tag ${r.twin_state === 'ALERT' ? 'tag-red' : 'tag-green'}">${r.twin_state}</span></td>
+    </tr>`).join('');
+  }
+}
+
+// ─── MITRE ───────────────────────────────────────────────────────────────────
+async function loadMitre() {
+  const data = await api('/mitre');
+  if (!data || !data.length) return;
+  $('tbody-mitre').innerHTML = data.map(r => `<tr>
+    <td>${r.technique_id}</td>
+    <td>${r.technique_name}</td>
+    <td><span class="tag tag-purple">${r.tactic}</span></td>
+    <td>${r.aquaforenchain_detection}</td>
+    <td><span class="tag ${r.coverage === 'FULL' ? 'tag-green' : 'tag-orange'}">${r.coverage}</span></td>
+  </tr>`).join('');
+}
+
+// ─── Comparative ─────────────────────────────────────────────────────────────
+async function loadComparative() {
+  const data = await api('/comparative');
+  if (!data || !data.length) return;
+  $('tbody-comparative').innerHTML = data.map((r, i) => `<tr>
+    <td><strong style="color:${i===0?'var(--accent)':'var(--txt)'}">${r.system}</strong>${i===0?' ⭐':''}</td>
+    <td class="mono" style="font-size:0.72rem">${r.consensus}</td>
+    <td>${r.anchoring}</td>
+    <td>${r.tamper_detection}</td>
+    <td><span class="tag ${r.digital_twin==='YES'?'tag-green':'tag-red'}">${r.digital_twin}</span></td>
+    <td><span class="tag ${r.custody==='Hash-linked chain'?'tag-green':'tag-orange'}">${r.custody}</span></td>
+    <td class="mono">${r.verify_complexity}</td>
+    <td><span class="tag ${r.commit_ratio.includes('N:1')?'tag-green':'tag-blue'}">${r.commit_ratio}</span></td>
+  </tr>`).join('');
+
+  // Radar chart
+  const featureLabels = ['Tamper Detection', 'Device Auth', 'Chain of Custody', 'Digital Twin', 'Privacy', 'Scalability', 'Open Source'];
+  const scores = {
+    'AquaForenChain (proposed)': [5, 5, 5, 5, 5, 5, 5],
+    'IPFS + Ethereum (generic)': [4, 2, 1, 1, 3, 3, 5],
+    'Hyperledger Fabric':        [4, 5, 4, 2, 3, 4, 5],
+    'IOTA Tangle':               [3, 1, 1, 1, 2, 4, 5],
+    'Direct SHA-256 + DB':       [2, 1, 1, 1, 2, 2, 5],
+  };
+  const palettes = ['#38bdf8','#34d399','#818cf8','#fb923c','#f87171'];
+  new Chart($('chart-radar'), {
+    type: 'radar',
+    data: {
+      labels: featureLabels,
+      datasets: data.map((r, i) => ({
+        label: r.system,
+        data: scores[r.system] || [3,3,3,3,3,3,3],
+        borderColor: palettes[i], backgroundColor: palettes[i].replace(')', '40)').replace('#', 'rgba(').replace(',', ','),
+        borderWidth: 2, pointRadius: 3,
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { r: { ticks: { color: '#64748b', backdropColor: 'transparent' }, grid: { color: 'rgba(100,180,255,0.12)' }, pointLabels: { color: '#94a3b8', font: { size: 10 } }, min: 0, max: 5 } },
+      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } } }
+    }
+  });
+}
+
+// ─── Devices ─────────────────────────────────────────────────────────────────
+async function loadDevices() {
+  const devs = await api('/devices');
+  const priv = await api('/privacy');
+  const icons = { reservoir: '🏊', pump: '⚙️', valve: '🚰', pressure_sensor: '🔵', flow_sensor: '🌊', quality_sensor: '🧪', evidence_gateway: '🔐' };
+  if (devs && devs.length) {
+    $('device-grid').innerHTML = devs.map(d => `
+      <div class="device-card">
+        <div style="font-size:1.8rem;margin-bottom:6px;">${icons[d.device_type] || '📟'}</div>
+        <div class="device-id">${d.device_id}</div>
+        <div class="device-type">${d.device_type}</div>
+        <div class="device-zone"><span class="tag tag-blue">${d.zone}</span></div>
+        <div style="font-size:0.7rem;color:var(--txt2);margin-top:4px;">${d.location}</div>
+        <span class="tag ${d.authorized==='True'||d.authorized===true?'tag-green':'tag-red'}" style="margin-top:6px;display:inline-block;">
+          ${d.authorized==='True'||d.authorized===true?'AUTHORIZED':'UNAUTHORIZED'}
+        </span>
+      </div>`).join('');
+  }
+  if (priv && priv.length) {
+    $('tbody-privacy').innerHTML = priv.map(r => `<tr>
+      <td>${r.category}</td>
+      <td><span class="tag ${r.location.includes('OFF')?'tag-green':'tag-blue'}">${r.location}</span></td>
+      <td><span class="tag ${r.pii_exposure==='NONE'||r.pii_exposure.includes('NONE')?'tag-green':'tag-orange'}">${r.pii_exposure}</span></td>
+      <td class="mono">${r.total_size_kb} KB</td>
+    </tr>`).join('');
+  }
+}
+
+// ─── Overhead ────────────────────────────────────────────────────────────────
+async function loadOverhead() {
+  const data = await api('/overhead');
+  if (!data || !data.length) return;
+  $('tbody-overhead').innerHTML = data.map(r => `<tr>
+    <td><strong>${Number(r.batch_size).toLocaleString()}</strong></td>
+    <td class="mono" style="color:var(--accent)">${r.hashing_phase_ms}</td>
+    <td class="mono" style="color:var(--accent2)">${r.merkle_build_ms}</td>
+    <td class="mono" style="color:var(--accent3)">${r.proof_gen_all_ms}</td>
+    <td class="mono" style="color:var(--warn);font-weight:700">${r.total_processing_ms}</td>
+    <td class="mono" style="color:var(--txt2)">${r.overhead_per_event_us} µs</td>
+  </tr>`).join('');
+}
+
+// ─── Smart City ───────────────────────────────────────────────────────────────
+async function loadSmartCity() {
+  const scenes = await api('/smart_city');
+  const reqs   = await api('/requirements');
+  const scIcons = ['💧','⚡','🚦','🏢','♻️','🚑'];
+  if (scenes && scenes.length) {
+    $('smartcity-cards').innerHTML = `<div style="display:flex;flex-direction:column;gap:16px;">` +
+      scenes.map((s, i) => `
+        <div class="card">
+          <div style="font-size:1.5rem;margin-bottom:8px;">${scIcons[i]||'🏙️'}</div>
+          <div style="font-size:0.95rem;font-weight:700;margin-bottom:6px;">${s.scenario}</div>
+          <div style="font-size:0.75rem;color:var(--txt2);margin-bottom:8px;"><strong style="color:var(--accent)">Scale:</strong> ${s.scale}</div>
+          <div style="font-size:0.75rem;color:var(--txt2);margin-bottom:4px;"><strong style="color:var(--danger)">Threat:</strong> ${s.threat_model}</div>
+          <div style="font-size:0.75rem;color:var(--accent3);"><strong>Benefit:</strong> ${s.benefit}</div>
+        </div>`).join('') + '</div>';
+  }
+  if (reqs && reqs.length) {
+    $('tbody-requirements').innerHTML = reqs.map(r => `<tr>
+      <td class="mono" style="color:var(--accent2)">${r.req_id}</td>
+      <td><strong>${r.requirement}</strong></td>
+      <td><span class="tag tag-blue" style="font-size:0.65rem">${r.standard||'—'}</span></td>
+      <td><span class="tag tag-green">${r.result}</span></td>
+    </tr>`).join('');
+  }
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+async function init() {
+  await Promise.all([
+    loadSummary(),
+    loadDigitalTwin(),
+    loadScalability(),
+    loadAttacks(),
+    loadEvents(),
+    loadCustody(),
+    loadGas(),
+    loadStatistical(),
+    loadMitre(),
+    loadComparative(),
+    loadDevices(),
+    loadOverhead(),
+    loadSmartCity(),
+  ]);
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

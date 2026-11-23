@@ -1,0 +1,1 @@
+export default function ResultGenerator(){ return <><h2>Result Generator</h2><p>Use the backend command to generate CSV, Excel, LaTeX, SVG, JSON and reports.</p><code>python -m backend.main --events 5000</code></>; }

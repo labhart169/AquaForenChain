@@ -1,0 +1,2 @@
+import SensorCard from '../components/SensorCard.jsx';
+export default function DigitalTwin(){ return <><h2>Smart-Water Digital Twin</h2><div className="twin"><div className="tank">Reservoir</div><div className="pipe">Pipe</div><div className="pump">Pump</div><div className="valve">Valve</div></div><div className="grid"><SensorCard name="Tank" value="generated" unit="%"/><SensorCard name="Pressure" value="generated" unit="bar"/><SensorCard name="Flow" value="generated" unit="L/min"/></div></>; }
